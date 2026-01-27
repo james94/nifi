@@ -50,7 +50,7 @@ prop_replace 'nifi.registry.security.truststorePasswd'   "${TRUSTSTORE_PASSWORD}
 prop_replace 'nifi.registry.web.http.port'   ''
 prop_replace 'nifi.registry.web.http.host'   ''
 prop_replace 'nifi.registry.web.https.port'  "${NIFI_REGISTRY_WEB_HTTPS_PORT:-18443}"
-prop_replace 'nifi.registry.web.https.host'  "${NIFI_REGISTRY_WEB_HTTPS_HOST:-$HOSTNAME}"
+prop_replace 'nifi.registry.web.https.host'  "${NIFI_REGISTRY_HOST:-$HOSTNAME}"
 
 # Establish initial user and an associated admin identity
 sed -i -e 's|<property name="Initial User Identity 1">.*</property>|<property name="Initial User Identity 1">'"${INITIAL_ADMIN_IDENTITY}"'</property>|'  ${NIFI_REGISTRY_HOME}/conf/authorizers.xml

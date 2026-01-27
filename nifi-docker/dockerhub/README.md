@@ -48,6 +48,10 @@ docker run --rm --entrypoint /bin/bash apache/nifi:1.12.0 -c 'readlink /opt/nifi
 
 # Docker Image Quickstart
 
+## Overview
+- This Dockerfile and scripts build and run Apache NiFi only.
+- NiFi Registry is not bundled; run it as a separate container and connect NiFi via the UI.
+
 ## Capabilities
 This image currently supports running in standalone mode either unsecured or with user authentication provided through:
   * [Single User Authentication](https://nifi.apache.org/docs/nifi-docs/html/administration-guide.html#single_user_identity_provider)    
@@ -273,3 +277,18 @@ _nifi.web.proxy.context.path_ property, which can be assigned via the environmen
 
 **NOTE**: If mapping the HTTPS port specifying trusted hosts should be provided for the property _nifi.web.proxy.host_.  This property can be specified to running instances
 via specifying an environment variable at container instantiation of _NIFI\_WEB\_PROXY\_HOST_.
+
+## Running NiFi Registry alongside
+- Build NiFi:
+  - ./DockerBuild.sh
+- Run NiFi (HTTP 8080, S2S RAW 10000 on network fleet-net):
+  - ./DockerRun.sh
+
+Run NiFi Registry separately
+- docker network create fleet-net
+- docker run -d --name nifi-registry --network fleet-net -p 18080:18080 apache/nifi-registry:latest
+
+Connect NiFi to Registry
+- In NiFi UI: Versioned Flows > Manage Registries > Add Registry
+  - URL: http://nifi-registry:18080/nifi-registry
+- Create a Bucket in Registry UI, then start versioning your flows.
