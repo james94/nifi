@@ -38,24 +38,52 @@ prop_replace 'nifi.python.extensions.source.directory.default'  "${NIFI_HOME}/py
 # Setup NiFi to scan for new NARs in nar_extensions
 prop_replace 'nifi.nar.library.autoload.directory'  "${NIFI_HOME}/nar_extensions"
 # Establish baseline properties
-prop_replace 'nifi.web.https.port'              "${NIFI_WEB_HTTPS_PORT:-8443}"
-prop_replace 'nifi.web.https.host'              "${NIFI_WEB_HTTPS_HOST:-$HOSTNAME}"
 prop_replace 'nifi.web.proxy.host'              "${NIFI_WEB_PROXY_HOST}"
-prop_replace 'nifi.remote.input.host'           "${NIFI_REMOTE_INPUT_HOST:-$HOSTNAME}"
+prop_replace 'nifi.remote.input.host'           "${NIFI_HOST:-$HOSTNAME}"
 prop_replace 'nifi.remote.input.socket.port'    "${NIFI_REMOTE_INPUT_SOCKET_PORT:-10000}"
-prop_replace 'nifi.remote.input.secure'         'true'
-prop_replace 'nifi.cluster.protocol.is.secure'  'true'
+
+# Default to UNSECURED (HTTP + unsecured S2S) when AUTH is not set
+if [ -z "${AUTH}" ]; then
+    echo 'Starting in UNSECURED mode (HTTP + unsecured Site-to-Site)'
+    prop_replace 'nifi.web.http.port' "${NIFI_WEB_HTTP_PORT:-8080}"
+    prop_replace 'nifi.web.http.host' "${NIFI_HOST:-$HOSTNAME}"
+    prop_replace 'nifi.web.https.port'  ''
+    prop_replace 'nifi.web.https.host'  ''
+    prop_replace 'nifi.remote.input.secure' 'false'
+
+    # Hard-reset TLS keystore/truststore properties to avoid SslContextConfiguration loading any defaults
+    # Remove any pre-existing occurrences (from previous runs or persisted configs)
+    sed -i -E '/^nifi\.security\.(keystore(Type|Passwd)?|keyPasswd|truststore(Type|Passwd)?)=.*/d' "${nifi_props_file}"
+    # Re-add them explicitly as empty to make the state unambiguous
+    prop_add_or_replace 'nifi.security.keystore'         ''
+    prop_add_or_replace 'nifi.security.keystoreType'     ''
+    prop_add_or_replace 'nifi.security.keystorePasswd'   ''
+    prop_add_or_replace 'nifi.security.keyPasswd'        ''
+    prop_add_or_replace 'nifi.security.truststore'       ''
+    prop_add_or_replace 'nifi.security.truststoreType'   ''
+    prop_add_or_replace 'nifi.security.truststorePasswd' ''
+
+    # Disable secure cluster protocol in unsecured mode
+    prop_replace 'nifi.cluster.protocol.is.secure' 'false'
+
+    # Optional diagnostic: show the current TLS lines (should be empty values)
+    echo "TLS props after cleanup:"
+    grep -E '^nifi\.security\.(keystore|truststore)' "${nifi_props_file}" || true
+else
+    # HTTPS and secure S2S will be configured in secure.sh
+    :
+fi
 
 # Set nifi-toolkit properties files and baseUrl
 "${scripts_dir}/toolkit.sh"
-prop_replace 'baseUrl' "https://${NIFI_WEB_HTTPS_HOST:-$HOSTNAME}:${NIFI_WEB_HTTPS_PORT:-8443}" ${nifi_toolkit_props_file}
+if [ -z "${AUTH}" ]; then
+    prop_replace 'baseUrl' "http://${NIFI_HOST:-$HOSTNAME}:${NIFI_WEB_HTTP_PORT:-8080}" ${nifi_toolkit_props_file}
+else
+    prop_replace 'baseUrl' "https://${NIFI_HOST:-$HOSTNAME}:${NIFI_WEB_HTTPS_PORT:-8443}" ${nifi_toolkit_props_file}
+fi
 
-prop_replace 'keystore'           "${NIFI_HOME}/conf/keystore.p12"      ${nifi_toolkit_props_file}
-prop_replace 'keystoreType'       "PKCS12"                              ${nifi_toolkit_props_file}
-prop_replace 'truststore'         "${NIFI_HOME}/conf/truststore.p12"    ${nifi_toolkit_props_file}
-prop_replace 'truststoreType'     "PKCS12"                              ${nifi_toolkit_props_file}
-
-if [ -z "${NIFI_WEB_PROXY_HOST}" ]; then
+# Only warn about proxy if running secure
+if [ -n "${AUTH}" ] && [ -z "${NIFI_WEB_PROXY_HOST}" ]; then
     echo 'NIFI_WEB_PROXY_HOST was not set but NiFi is configured to run in a secure mode. The NiFi UI may be inaccessible if using port mapping or connecting through a proxy.'
 fi
 

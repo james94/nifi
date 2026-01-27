@@ -42,7 +42,7 @@ ENV NIFI_LOG_DIR=${NIFI_HOME}/logs
 ADD sh/ ${NIFI_BASE_DIR}/scripts/
 RUN chmod -R +x ${NIFI_BASE_DIR}/scripts/*.sh \
    && apt-get update \
-   && apt-get install -y unzip
+   && apt-get install -y unzip wget
 
 # Setup NiFi user and create necessary directories
 RUN groupadd -g ${GID} nifi || groupmod -n nifi `getent group ${GID} | cut -d: -f1` \
@@ -50,7 +50,7 @@ RUN groupadd -g ${GID} nifi || groupmod -n nifi `getent group ${GID} | cut -d: -
     && mkdir -p ${NIFI_BASE_DIR} \
     && chown -R nifi:nifi ${NIFI_BASE_DIR} \
     && apt-get update \
-    && apt-get install -y jq xmlstarlet procps unzip \
+    && apt-get install -y jq xmlstarlet procps unzip wget \
     && apt-get install -y python3 \
     && apt-get install -y python3-venv \
     && apt-get -y autoremove \
@@ -59,19 +59,19 @@ RUN groupadd -g ${GID} nifi || groupmod -n nifi `getent group ${GID} | cut -d: -
 
 USER nifi
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN wget -O- https://astral.sh/uv/install.sh | sh
 
 # Download, validate, and expand Apache NiFi Toolkit binary.
-RUN curl -fSL ${MIRROR_BASE_URL}/${NIFI_TOOLKIT_BINARY_PATH} -o ${NIFI_BASE_DIR}/nifi-toolkit-${NIFI_VERSION}-bin.zip \
-    && echo "$(curl ${BASE_URL}/${NIFI_TOOLKIT_BINARY_PATH}.sha512) *${NIFI_BASE_DIR}/nifi-toolkit-${NIFI_VERSION}-bin.zip" | sha512sum -c - \
+RUN wget -O ${NIFI_BASE_DIR}/nifi-toolkit-${NIFI_VERSION}-bin.zip ${MIRROR_BASE_URL}/${NIFI_TOOLKIT_BINARY_PATH} \
+    && echo "$(wget -O- ${BASE_URL}/${NIFI_TOOLKIT_BINARY_PATH}.sha512) *${NIFI_BASE_DIR}/nifi-toolkit-${NIFI_VERSION}-bin.zip" | sha512sum -c - \
     && unzip ${NIFI_BASE_DIR}/nifi-toolkit-${NIFI_VERSION}-bin.zip -d ${NIFI_BASE_DIR} \
     && rm ${NIFI_BASE_DIR}/nifi-toolkit-${NIFI_VERSION}-bin.zip \
     && mv ${NIFI_BASE_DIR}/nifi-toolkit-${NIFI_VERSION} ${NIFI_TOOLKIT_HOME} \
     && ln -s ${NIFI_TOOLKIT_HOME} ${NIFI_BASE_DIR}/nifi-toolkit-${NIFI_VERSION}
 
 # Download, validate, and expand Apache NiFi binary.
-RUN curl -fSL ${MIRROR_BASE_URL}/${NIFI_BINARY_PATH} -o ${NIFI_BASE_DIR}/nifi-${NIFI_VERSION}-bin.zip \
-    && echo "$(curl ${BASE_URL}/${NIFI_BINARY_PATH}.sha512) *${NIFI_BASE_DIR}/nifi-${NIFI_VERSION}-bin.zip" | sha512sum -c - \
+RUN wget -O ${NIFI_BASE_DIR}/nifi-${NIFI_VERSION}-bin.zip ${MIRROR_BASE_URL}/${NIFI_BINARY_PATH} \
+    && echo "$(wget -O- ${BASE_URL}/${NIFI_BINARY_PATH}.sha512) *${NIFI_BASE_DIR}/nifi-${NIFI_VERSION}-bin.zip" | sha512sum -c - \
     && unzip ${NIFI_BASE_DIR}/nifi-${NIFI_VERSION}-bin.zip -d ${NIFI_BASE_DIR} \
     && rm ${NIFI_BASE_DIR}/nifi-${NIFI_VERSION}-bin.zip \
     && mv ${NIFI_BASE_DIR}/nifi-${NIFI_VERSION} ${NIFI_HOME} \
@@ -100,7 +100,7 @@ VOLUME ${NIFI_LOG_DIR} \
 RUN echo "#!/bin/sh\n" > $NIFI_HOME/bin/nifi-env.sh
 
 # Web HTTP(s) & Socket Site-to-Site Ports
-EXPOSE 8443/tcp 10000/tcp 8000/tcp
+EXPOSE 8080/tcp 8443/tcp 10000/tcp 8000/tcp
 
 WORKDIR ${NIFI_HOME}
 

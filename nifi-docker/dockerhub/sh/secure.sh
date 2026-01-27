@@ -58,13 +58,13 @@ prop_replace 'truststorePasswd'   "${TRUSTSTORE_PASSWORD}"              ${nifi_t
 prop_replace 'nifi.web.http.port'   ''
 prop_replace 'nifi.web.http.host'   ''
 prop_replace 'nifi.web.https.port'  "${NIFI_WEB_HTTPS_PORT:-8443}"
-prop_replace 'nifi.web.https.host'  "${NIFI_WEB_HTTPS_HOST:-$HOSTNAME}"
+prop_replace 'nifi.web.https.host'  "${NIFI_HOST:-$HOSTNAME}"
 prop_replace 'nifi.remote.input.secure' 'true'
-# Enable the property only for cluster install
-prop_replace 'nifi.cluster.protocol.is.secure' "${NIFI_CLUSTER_IS_NODE:-false}"
+# Enable secure cluster protocol in secure mode
+prop_replace 'nifi.cluster.protocol.is.secure' 'true'
 
 # Setup nifi-toolkit
-prop_replace 'baseUrl' "https://${NIFI_WEB_HTTPS_HOST:-$HOSTNAME}:${NIFI_WEB_HTTPS_PORT:-8443}" ${nifi_toolkit_props_file}
+prop_replace 'baseUrl' "https://${NIFI_HOST:-$HOSTNAME}:${NIFI_WEB_HTTPS_PORT:-8443}" ${nifi_toolkit_props_file}
 
 # Configure Authorizer and Login Identity Provider
 prop_replace 'nifi.security.user.authorizer' "${NIFI_SECURITY_USER_AUTHORIZER:-managed-authorizer}"

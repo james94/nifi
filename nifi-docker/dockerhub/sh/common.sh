@@ -34,12 +34,11 @@ uncomment() {
 # 3 - file to perform replacement inline
 prop_add_or_replace () {
   target_file=${3:-${nifi_props_file}}
-  property_found=$(awk -v property="${1}" 'index($0, property) == 1')
-  if [ -z "${property_found}" ]; then
-    echo "File [${target_file}] adding [${1}]"
-    echo "$1=$2" >> ${target_file}
+  echo "File [${target_file}] add/replace [${1}]"
+  if grep -q -E "^${1}=.*" "${target_file}"; then
+    prop_replace "$1" "$2" "${target_file}"
   else
-    prop_replace $1 $2 $3  
+    echo "$1=$2" >> "${target_file}"
   fi
 }
 
